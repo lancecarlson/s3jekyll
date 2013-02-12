@@ -192,5 +192,6 @@ func main() {
 
 	PutFiles(b, config, c)
 	filepath.Walk(config.From, Walker(b, config, c))
+	close(c)
 	wg.Wait()
 }
