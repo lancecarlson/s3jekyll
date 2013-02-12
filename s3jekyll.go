@@ -13,6 +13,7 @@ import (
 	"mime"
 	"strings"
 	"flag"
+	"sync"
 )
 
 var (
@@ -117,9 +118,18 @@ func (c *ConfigFile) setPath(to string) (err error) {
 	return
 }
 
-/*func PutFiles(bucket *s3.Bucket, config *Config, c chan string) {
-	PutFile(bucket, config, p)
-}*/
+var wg sync.WaitGroup
+
+func PutFiles(bucket *s3.Bucket, config *Config, c chan string) {
+	for i := 0; i < int(config.Concurrency); i++ {
+		go func() {
+			for path := range c {
+				PutFile(bucket, config, path)
+			}
+			wg.Done()
+		}()
+	}
+}
 
 func PutFile(bucket *s3.Bucket, config *Config, path string) (err error) {
 	stat, err := os.Stat(path)
@@ -132,10 +142,11 @@ func PutFile(bucket *s3.Bucket, config *Config, path string) (err error) {
 	path = strings.Replace(path, config.From, "", 1)
 	err = bucket.PutReader(config.To + path, reader, stat.Size(), mimeType, s3.PublicRead)
 	if err != nil { return }
+	fmt.Println(path)
 	return nil
 }
 
-func S3Walker(bucket *s3.Bucket, config *Config) filepath.WalkFunc {
+func Walker(bucket *s3.Bucket, config *Config, c chan string) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, inErr error) (err error) {
 		if info.IsDir() {
 			return nil
@@ -143,9 +154,9 @@ func S3Walker(bucket *s3.Bucket, config *Config) filepath.WalkFunc {
 		ignore, err := config.Ignore(path)
 		if err != nil { return }
 		if ignore == false {
-			err = PutFile(bucket, config, path)
-			if err != nil { return }
-			fmt.Println(path)
+			c <- path
+/*			err = PutFile(bucket, config, path)
+			if err != nil { return }*/
 		}
 		return nil
 	}
@@ -176,5 +187,10 @@ func main() {
 	auth := aws.Auth{AccessKey: config.Access, SecretKey: config.Secret}
 	b := s3.New(auth, aws.USEast).Bucket(config.Bucket)
 
-	filepath.Walk(config.From, S3Walker(b, config))
+	c := make(chan string)
+	wg.Add(int(config.Concurrency))
+
+	PutFiles(b, config, c)
+	filepath.Walk(config.From, Walker(b, config, c))
+	wg.Wait()
 }
