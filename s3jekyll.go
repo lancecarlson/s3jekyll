@@ -155,8 +155,6 @@ func Walker(bucket *s3.Bucket, config *Config, c chan string) filepath.WalkFunc 
 		if err != nil { return }
 		if ignore == false {
 			c <- path
-/*			err = PutFile(bucket, config, path)
-			if err != nil { return }*/
 		}
 		return nil
 	}
