@@ -9,4 +9,4 @@ download
 More platforms coming soon!
 
 OS X:
-https://s3.amazonaws.com/labs.healpay.com/s3jekyll/bin/s3jekyll_darwin
+http://labs.healpay.com/s3jekyll/bin/s3jekyll_darwin
