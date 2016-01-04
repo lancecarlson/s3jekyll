@@ -148,6 +148,9 @@ func PutFile(bucket *s3.Bucket, config *Config, path string) (err error) {
 
 func Walker(bucket *s3.Bucket, config *Config, c chan string) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, inErr error) (err error) {
+		if info == nil {
+			panic("From directory doesn't exist")
+		}
 		if info.IsDir() {
 			return nil
 		}
