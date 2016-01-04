@@ -1,8 +1,8 @@
 package main
 
 import (
-	"launchpad.net/goamz/aws"
-        "launchpad.net/goamz/s3"
+	"gopkg.in/amz.v1/aws"
+        "gopkg.in/amz.v1/s3"
 	"encoding/json"
 	"io/ioutil"
 	"path/filepath"
